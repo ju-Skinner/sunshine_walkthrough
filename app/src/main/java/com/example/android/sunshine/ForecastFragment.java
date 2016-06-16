@@ -1,5 +1,6 @@
 package com.example.android.sunshine;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -8,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -35,19 +37,33 @@ public class ForecastFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Add this line to order for this fragment to handle menu events.
         setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_forecast_fragment, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in the AndroidManifest.xml
+        int id = item.getItemId();
+        if (id == R.id.action_refresh) {
+            FetchWeatherTask task = new FetchWeatherTask();
+            task.execute("94043");
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-
-
-
-
-
-
 
         String[] data = {"Sun - Sunny - 20/7",
             "Mon - Sunny - 31/17",
@@ -58,10 +74,15 @@ public class ForecastFragment extends Fragment {
             "Sat - Trapped in Weatherstation- 23/18"
         };
         List<String> weekForecast = new ArrayList<>(Arrays.asList(data));
+
+        // Now that we have some dummy forecast data, create an ArrayAdapter.
+        // The ArrayAdapter will take data from a source (like our dummy forecast) and
+        // use it to populate the ListView it's attached to.
         mForecastAdapter = new ArrayAdapter<String>(getActivity(),
                                                     R.layout.list_item_forecast,
                                                     R.id.list_item_forecast_textview,
                                                     weekForecast);
+
         View rootView = inflater.inflate(R.layout.forecast_fragment, container, false);
 
         // Retrieve a reference to the ListView, and set the adapter.
@@ -71,17 +92,17 @@ public class ForecastFragment extends Fragment {
         return rootView;
     }
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_forecast_fragment, menu);
-
-    }
-
-    public class FetchWeatherTask extends AsyncTask<Void, Void, Void> {
+    public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Void doInBackground(String... params) {
+
+            // If there's no zip code, there is nothing to look up.
+            if (params.length == 0) {
+                return null;
+            }
+
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
             HttpURLConnection urlConnection = null;
@@ -90,13 +111,37 @@ public class ForecastFragment extends Fragment {
             // Will contain the RAW JSON response
             String forecastJsonStr = null;
 
+            String format = "json";
+            String units = "metric";
+            int numDays = 7;
+
             try {
                 // Construct the URL for the OpenWeatherMap query
                 // Possible parameters are available at OWM forecast API page, at
                 // http://openweathermap.org/api
-                String baseUrl = "http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&units=metric&cnt=7&mode=json";
-                String apiKey = "&APPID=" + BuildConfig.OPEN_WEATHER_MAP_API_KEY;
-                URL url = new URL(baseUrl.concat(apiKey));
+                final String baseUrl = "http://api.openweathermap.org";
+                final String QUERY_PARAM = "q";
+                final String UNITS_PARAM = "units";
+                final String DAYS_PARAM = "cnt";
+                final String FORMAT_PARAM = "mode";
+                final String APPID_PARAM = "appid";
+                Uri builtUri = Uri.parse(baseUrl)
+                               .buildUpon()
+                               .appendPath("data")
+                               .appendPath("2.5")
+                               .appendPath("forecast")
+                               .appendPath("daily")
+                               .appendQueryParameter(QUERY_PARAM, params[0])
+                               .appendQueryParameter(FORMAT_PARAM, format)
+                               .appendQueryParameter(UNITS_PARAM, units)
+                               .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
+                               .appendQueryParameter(APPID_PARAM, BuildConfig.OPEN_WEATHER_MAP_API_KEY)
+                               .build();
+
+                URL url = new URL(builtUri.toString());
+
+                // Log the buitl URI
+                Log.v(LOG_TAG, "Built URI: " + builtUri.toString());
 
                 // Create the request to OpenWeatherMap, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -127,8 +172,8 @@ public class ForecastFragment extends Fragment {
 
                 forecastJsonStr = buffer.toString();
 
-            } catch (Exception e) {
-                Log.e("ForecastFragment", "Error ", e);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
                 return null;
