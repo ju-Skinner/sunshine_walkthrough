@@ -1,10 +1,13 @@
 package com.example.android.sunshine;
 
 import android.os.AsyncTask;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -27,6 +30,12 @@ public class ForecastFragment extends Fragment {
     ArrayAdapter<String> mForecastAdapter;
 
     public ForecastFragment() {
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -60,6 +69,12 @@ public class ForecastFragment extends Fragment {
         listView.setAdapter(mForecastAdapter);
 
         return rootView;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_forecast_fragment, menu);
+
     }
 
     public class FetchWeatherTask extends AsyncTask<Void, Void, Void> {
