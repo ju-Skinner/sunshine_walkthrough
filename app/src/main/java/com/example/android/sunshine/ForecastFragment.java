@@ -98,7 +98,7 @@ public class ForecastFragment extends Fragment {
         return rootView;
     }
 
-    public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
+    public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
         /* The date/time conversion code */
@@ -159,7 +159,7 @@ public class ForecastFragment extends Fragment {
             dayTime = new Time();
 
             String[] resultStrs = new String[numDays];
-            for (int i = 0; i <weatherArray.length(); i++) {
+            for (int i = 0; i < weatherArray.length(); i++) {
                 // for now, using the format "Day, description, hi/low"
                 String day;
                 String description;
@@ -199,7 +199,7 @@ public class ForecastFragment extends Fragment {
         }
 
         @Override
-        protected Void doInBackground(String... params) {
+        protected String[] doInBackground(String... params) {
 
             // If there's no zip code, there is nothing to look up.
             if (params.length == 0) {
@@ -228,6 +228,7 @@ public class ForecastFragment extends Fragment {
                 final String DAYS_PARAM = "cnt";
                 final String FORMAT_PARAM = "mode";
                 final String APPID_PARAM = "appid";
+
                 Uri builtUri = Uri.parse(baseUrl)
                                .buildUpon()
                                .appendPath("data")
@@ -275,6 +276,9 @@ public class ForecastFragment extends Fragment {
 
                 forecastJsonStr = buffer.toString();
 
+                // Log the raw response
+                Log.v(LOG_TAG, "JSON Data: " + forecastJsonStr);
+
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
@@ -293,6 +297,15 @@ public class ForecastFragment extends Fragment {
                     }
                 }
             }
+
+            try {
+                return getWeatherDataFromJson(forecastJsonStr, numDays);
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                e.printStackTrace();
+            }
+
+            // This will only occur if there is an error getting or parsing JSON.
             return null;
         }
     }
