@@ -66,40 +66,31 @@ public class ForecastFragment extends Fragment {
         // as you specify a parent activity in the AndroidManifest.xml
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            FetchWeatherTask task = new FetchWeatherTask();
-
-            // Retrieve an instance of the SharedPrefences
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            String location = sharedPref.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
-            task.execute(location);
-            
-
+            updateWeather();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    private void updateWeather() {
+        FetchWeatherTask task = new FetchWeatherTask();
+
+        // Retrieve an instance of the SharedPrefences
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = sharedPref.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        task.execute(location);
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
-
-        String[] data = {"Sun - Sunny - 20/7",
-            "Mon - Sunny - 31/17",
-            "Tues - Foggy - 21/8",
-            "Weds - Cloudy - 22/17",
-            "Thurs - Rainy - 18/11/",
-            "Fri - Foggy - 21/10",
-            "Sat - Trapped in Weatherstation- 23/18"
-        };
-        List<String> weekForecast = new ArrayList<>(Arrays.asList(data));
-
         // Now that we have some dummy forecast data, create an ArrayAdapter.
-        // The ArrayAdapter will take data from a source (like our dummy forecast) and
-        // use it to populate the ListView it's attached to.
+        // The ArrayAdapter will take data from and use it to populate the
+        // ListView it's attached to.
         mForecastAdapter = new ArrayAdapter<String>(getActivity(),
                                                     R.layout.list_item_forecast,
                                                     R.id.list_item_forecast_textview,
-                                                    weekForecast);
+                                                    new ArrayList<String>());
 
         View rootView = inflater.inflate(R.layout.forecast_fragment, container, false);
 
@@ -116,6 +107,12 @@ public class ForecastFragment extends Fragment {
             }
         });
         return rootView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
