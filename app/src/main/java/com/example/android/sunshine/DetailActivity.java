@@ -22,6 +22,11 @@ public class DetailActivity extends AppCompatActivity {
         // This will set up the toolbar / menu.
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        if (getSupportActionBar() != null) {
+            // Show the Up button in the action bar.
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
     }
 
 
