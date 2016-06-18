@@ -128,12 +128,21 @@ public class ForecastFragment extends Fragment {
          *
          * Prepare the weather high/lows for presentation
          */
-        private String formatHighLows(double high, double low) {
+        private String formatHighLows(double high, double low, String unitType) {
             // For presentation, assume the user doesn't care about tenths of a degree
+            if ( unitType.equals(getString(R.string.pref_units_imperial)) ) {
+                high = (high * 1.8) + 32;
+                low = (low * 1.8) + 32;
+            }
+            else if (!unitType.equals(getString(R.string.pref_units_metric))) {
+                Log.d(LOG_TAG, "Unit type not found: " + unitType);
+            }
+
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 
-            return roundedHigh + "/" + roundedLow;
+            String highLowStr = roundedHigh + "/" + roundedLow;
+            return highLowStr;
         }
 
         /**
@@ -175,6 +184,18 @@ public class ForecastFragment extends Fragment {
             dayTime = new Time();
 
             String[] resultStrs = new String[numDays];
+
+            // Retrieve the values from the Settings Preference using SharedPreferences
+            // Data is fetched in Celsius by default.
+            // If the user prefers to see in Fahrenheit, convert the values here.
+            // We do this rather than fetching in Fahrenheit so that the user can
+            // change without us having to re-fetch the data once it is stored in the database
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String unitType = sharedPreferences.getString(
+                    getString(R.string.pref_units_key),
+                    getString(R.string.pref_units_metric)
+            );
+
             for (int i = 0; i < weatherArray.length(); i++) {
                 // for now, using the format "Day, description, hi/low"
                 String day;
@@ -203,7 +224,7 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low, unitType);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
 
@@ -232,7 +253,7 @@ public class ForecastFragment extends Fragment {
             String forecastJsonStr = null;
 
             String format = "json";
-            String units = "imperial";
+            String units = "metric";
             int numDays = 7;
 
             try {
